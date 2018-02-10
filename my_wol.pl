@@ -150,7 +150,7 @@ fitness_score(minimax, PlayerColour, Board, Fitness) :-
 	other_colour(PlayerColour, OpponentColour),
 	calculate_next_play(OpponentColour, Board, land_grab, NewBoardState, Move),
    move_a_piece(Move, OpponentColour, NewBoardState, NewerBoardState),
-   fitness_score(bloodlust, OpponentColour, NewerBoardState, OpponentFitness),
+   fitness_score(land_grab, OpponentColour, NewerBoardState, OpponentFitness),
 	Fitness is -OpponentFitness. 
 
 other_colour('r', 'b').
