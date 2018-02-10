@@ -1,4 +1,3 @@
-:- [war_of_life]. 
 :- use_module(library(system)).
 
 test_strategy(N, Strat1, Strat2) :-
@@ -20,7 +19,6 @@ test_strategy(N, Strat1, Strat2) :-
    format('Average game length:  ~w~n',[Average]),
 	format('Average game time: ~w ms ~n',[AverageTime]).
    
-
 test_strategy(0, _, _, [], [], Time, Time).
 
 test_strategy(N, S1, S2, [NofMoves |Moves], [WinningPlayer |Results], AccTime, TotalTime) :-
@@ -66,10 +64,6 @@ longest_game([H|Moves], Longest, Result) :-
       longest_game(Moves, H, Result);
       longest_game(Moves, Longest, Result)).
 
-
-
-
-
 bloodlust(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
    calculate_next_play(PlayerColour, CurrentBoardState, bloodlust, NewBoardState, Move).
 
@@ -82,7 +76,8 @@ land_grab(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
 minimax(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
    calculate_next_play(PlayerColour, CurrentBoardState, minimax, NewBoardState, Move).
 
-
+/*List all possible move, try them, calculate their fitness regarding the strategy used, then execute
+  the move having the best fitness */
 calculate_next_play(PlayerColour, CurrentBoardState, Strategy, NewBoardState, Move) :-
    separate_colours(PlayerColour, CurrentBoardState, CurrentPlayer, Opponent),
    list_all_moves(CurrentPlayer, Opponent, AllMoves),
@@ -94,8 +89,7 @@ list_all_moves(Alive, OtherPlayerAlive, AllMoves) :-
                       neighbour_position(A,B,[MA,MB]),
 	              \+member([MA,MB],Alive),
 	              \+member([MA,MB],OtherPlayerAlive)),
-	 AllMoves).
-
+	   AllMoves).
 
 separate_colours('b', [B, R], B, R).
 separate_colours('r', [B, R], R, B).
@@ -103,8 +97,8 @@ separate_colours('r', [B, R], R, B).
 regroup_colours('b', Player, Opponent, [Player | [Opponent]]).
 regroup_colours('r', Player, Opponent, [Opponent | [Player]]).
 
-
-/* Calculate the fitness of head element and then calculate once the fitness of every other move, keeping track of the best move so far as well as its fitness */
+/* Calculate the fitness of head element and then calculate once the fitness of every other move,
+   keeping track of the best move so far as well as its fitness */
 find_best_move([H | OtherMoves], Strategy, PlayerColour, CurrentBoardState, Move) :-
    move_a_piece(H, PlayerColour, CurrentBoardState, BoardAfterMove),
    next_generation(BoardAfterMove, BoardAfterCrank),
@@ -113,14 +107,17 @@ find_best_move([H | OtherMoves], Strategy, PlayerColour, CurrentBoardState, Move
 
 find_best_moves([], _, _, _, BestMove, _, BestMove).
 
-find_best_moves([H | OtherMoves], Strategy, PlayerColour, CurrentBoardState, SoFarMove, SoFarFitness, Move) :-
+find_best_moves([H | OtherMoves], Strategy, PlayerColour, CurrentBoardState, 
+                  SoFarMove, SoFarFitness, Move) :-
    move_a_piece(H, PlayerColour, CurrentBoardState, BoardAfterMove),
    next_generation(BoardAfterMove, BoardAfterCrank),
    fitness_score(Strategy, PlayerColour, BoardAfterCrank, Fitness),
    (Fitness > SoFarFitness ->
       find_best_moves(OtherMoves, Strategy, PlayerColour, CurrentBoardState, H, Fitness, Move);
-      find_best_moves(OtherMoves, Strategy, PlayerColour, CurrentBoardState, SoFarMove, SoFarFitness, Move)).
+      find_best_moves(OtherMoves, Strategy, PlayerColour, CurrentBoardState, 
+                      SoFarMove, SoFarFitness, Move)).
 
+/* Update the board with a specified move wihout having to separate and regroup colours */
 move_a_piece(Move, PlayerColour, CurrentBoardState, NewBoardState) :-
    separate_colours(PlayerColour, CurrentBoardState, CurrentPlayer, Opponent),
    alter_board(Move, CurrentPlayer, NewCurrentPlayer),
@@ -146,6 +143,7 @@ fitness_score(minimax, PlayerColour, Board, Fitness) :-
 	!,
 	length(Player, Fitness).
 
+/* Minimises the fitness of the opponent's best possible move for next turn */
 fitness_score(minimax, PlayerColour, Board, Fitness) :-
 	other_colour(PlayerColour, OpponentColour),
 	calculate_next_play(OpponentColour, Board, land_grab, NewBoardState, Move),
@@ -155,14 +153,3 @@ fitness_score(minimax, PlayerColour, Board, Fitness) :-
 
 other_colour('r', 'b').
 other_colour('b', 'r').
-   
-
-
-
-
-
-
-
-
-
-
