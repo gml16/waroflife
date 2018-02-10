@@ -35,7 +35,7 @@ test_strategy(N, S1, S2, [NofMoves |Moves], [WinningPlayer |Results], AccTime, T
 count_elem([], _, 0).
 count_elem([H|T], H, Num) :- 
    count_elem(T,H,Z), 
-   Num is Z+1.
+   Num is Z + 1.
 count_elem([Hbis|T], H, Num) :- 
    Hbis \= H,
    count_elem(T,H,Num).
@@ -72,6 +72,13 @@ longest_game([H|Moves], Longest, Result) :-
 
 bloodlust(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
    calculate_next_play(PlayerColour, CurrentBoardState, bloodlust, NewBoardState, Move).
+
+self_preservation(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
+   calculate_next_play(PlayerColour, CurrentBoardState, self_preservation, NewBoardState, Move).
+
+land_grab(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
+   calculate_next_play(PlayerColour, CurrentBoardState, land_grab, NewBoardState, Move).
+
 
 calculate_next_play(PlayerColour, CurrentBoardState, Strategy, NewBoardState, Move) :-
    separate_colours(PlayerColour, CurrentBoardState, CurrentPlayer, Opponent),
@@ -111,16 +118,26 @@ find_best_moves([H | OtherMoves], Strategy, PlayerColour, CurrentBoardState, SoF
       find_best_moves(OtherMoves, Strategy, PlayerColour, CurrentBoardState, H, Fitness, Move);
       find_best_moves(OtherMoves, Strategy, PlayerColour, CurrentBoardState, SoFarMove, SoFarFitness, Move)).
 
+move_a_piece(Move, PlayerColour, CurrentBoardState, NewBoardState) :-
+   separate_colours(PlayerColour, CurrentBoardState, CurrentPlayer, Opponent),
+   alter_board(Move, CurrentPlayer, NewCurrentPlayer),
+   regroup_colours(PlayerColour, NewCurrentPlayer, Opponent, NewBoardState).
+
 fitness_score(bloodlust, PlayerColour, Board, Fitness) :-
    separate_colours(PlayerColour, Board, _, Opponent),
    length(Opponent, Length),
    Fitness is -Length.
 
+fitness_score(self_preservation, PlayerColour, Board, Fitness) :-
+   separate_colours(PlayerColour, Board, Player, _),
+   length(Player, Length),
+   Fitness is Length.
 
-move_a_piece(Move, PlayerColour, CurrentBoardState, NewBoardState) :-
-   separate_colours(PlayerColour, CurrentBoardState, CurrentPlayer, Opponent),
-   alter_board(Move, CurrentPlayer, NewCurrentPlayer),
-   regroup_colours(PlayerColour, NewCurrentPlayer, Opponent, NewBoardState).
+fitness_score(land_grab, PlayerColour, Board, Fitness) :-
+   separate_colours(PlayerColour, Board, Player, Opponent),
+   length(Player, LengthPlayer),
+   length(Opponent, LengthOpponent),
+   Fitness is LengthPlayer - LengthOpponent.
    
 
 
