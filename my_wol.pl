@@ -79,6 +79,9 @@ self_preservation(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
 land_grab(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
    calculate_next_play(PlayerColour, CurrentBoardState, land_grab, NewBoardState, Move).
 
+minimax(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
+   calculate_next_play(PlayerColour, CurrentBoardState, minimax, NewBoardState, Move).
+
 
 calculate_next_play(PlayerColour, CurrentBoardState, Strategy, NewBoardState, Move) :-
    separate_colours(PlayerColour, CurrentBoardState, CurrentPlayer, Opponent),
@@ -130,14 +133,28 @@ fitness_score(bloodlust, PlayerColour, Board, Fitness) :-
 
 fitness_score(self_preservation, PlayerColour, Board, Fitness) :-
    separate_colours(PlayerColour, Board, Player, _),
-   length(Player, Length),
-   Fitness is Length.
+   length(Player, Fitness).
 
 fitness_score(land_grab, PlayerColour, Board, Fitness) :-
    separate_colours(PlayerColour, Board, Player, Opponent),
    length(Player, LengthPlayer),
    length(Opponent, LengthOpponent),
    Fitness is LengthPlayer - LengthOpponent.
+
+fitness_score(minimax, PlayerColour, Board, Fitness) :-
+	separate_colours(PlayerColour,Board, Player, []),
+	!,
+	length(Player, Fitness).
+
+fitness_score(minimax, PlayerColour, Board, Fitness) :-
+	other_colour(PlayerColour, OpponentColour),
+	calculate_next_play(OpponentColour, Board, land_grab, NewBoardState, Move),
+   move_a_piece(Move, OpponentColour, NewBoardState, NewerBoardState),
+   fitness_score(bloodlust, OpponentColour, NewerBoardState, OpponentFitness),
+	Fitness is -OpponentFitness. 
+
+other_colour('r', 'b').
+other_colour('b', 'r').
    
 
 
