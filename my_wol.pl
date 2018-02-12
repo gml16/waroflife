@@ -139,10 +139,9 @@ fitness_score(land_grab, PlayerColour, Board, Fitness) :-
    Fitness is LengthPlayer - LengthOpponent.
 
 fitness_score(minimax, PlayerColour, Board, Fitness) :-
-	separate_colours(PlayerColour,Board, Player, []),
+	separate_colours(PlayerColour,Board, [_ | _], []),
 	!,
-	Fitness is 64. 
-   #64 is the number of cells, hence the best fitness possible for landgrab
+	Fitness is 64. /* 64 is the number of cells hence the maximum number for the fitness of landgrab */
 
 /* Minimises the fitness of the opponent's best possible move for next turn */
 fitness_score(minimax, PlayerColour, Board, Fitness) :-
