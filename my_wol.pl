@@ -1,12 +1,10 @@
 :- use_module(library(system)).
 
 test_strategy(N, Strat1, Strat2) :-
-   
    test_strategy(N, Strat1, Strat2, Moves, Results, 0, Time),
-   
-   count_elem(Results, 'draw', NofDraws),
    count_elem(Results, 'b', NofBlueWins),
    count_elem(Results, 'r', NofRedWins),
+   NofDraws is N - NofBlueWins - NofRedWins,
    shortest_game(Moves, Shortest),
    longest_game(Moves, Longest),
    average_game_length(Moves, Average),
@@ -65,23 +63,23 @@ longest_game([H|Moves], Longest, Result) :-
       longest_game(Moves, Longest, Result)).
 
 bloodlust(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
-   calculate_next_play(PlayerColour, CurrentBoardState, bloodlust, NewBoardState, Move).
+   calculate_next_play(PlayerColour, CurrentBoardState, bloodlust, NewBoardState, Move, _).
 
 self_preservation(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
-   calculate_next_play(PlayerColour, CurrentBoardState, self_preservation, NewBoardState, Move).
+   calculate_next_play(PlayerColour, CurrentBoardState, self_preservation, NewBoardState, Move, _).
 
 land_grab(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
-   calculate_next_play(PlayerColour, CurrentBoardState, land_grab, NewBoardState, Move).
+   calculate_next_play(PlayerColour, CurrentBoardState, land_grab, NewBoardState, Move, _).
 
 minimax(PlayerColour, CurrentBoardState, NewBoardState, Move) :-
-   calculate_next_play(PlayerColour, CurrentBoardState, minimax, NewBoardState, Move).
+   calculate_next_play(PlayerColour, CurrentBoardState, minimax, NewBoardState, Move, _).
 
 /*List all possible move, try them, calculate their fitness regarding the strategy used, then execute
   the move having the best fitness */
-calculate_next_play(PlayerColour, CurrentBoardState, Strategy, NewBoardState, Move) :-
+calculate_next_play(PlayerColour, CurrentBoardState, Strategy, NewBoardState, Move, MoveFitness) :-
    separate_colours(PlayerColour, CurrentBoardState, CurrentPlayer, Opponent),
    list_all_moves(CurrentPlayer, Opponent, AllMoves),
-   find_best_move(AllMoves, Strategy, PlayerColour, CurrentBoardState, Move),
+   find_best_moves(AllMoves, Strategy, PlayerColour, CurrentBoardState, Move, MoveFitness),
    move_a_piece(Move, PlayerColour, CurrentBoardState, NewBoardState).
 
 list_all_moves(Alive, OtherPlayerAlive, AllMoves) :-
@@ -99,23 +97,25 @@ regroup_colours('r', Player, Opponent, [Opponent | [Player]]).
 
 /* Calculate the fitness of head element and then calculate once the fitness of every other move,
    keeping track of the best move so far as well as its fitness */
-find_best_move([H | OtherMoves], Strategy, PlayerColour, CurrentBoardState, Move) :-
+find_best_moves([H | OtherMoves], Strategy, PlayerColour, CurrentBoardState, Move, MoveFitness) :-
    move_a_piece(H, PlayerColour, CurrentBoardState, BoardAfterMove),
    next_generation(BoardAfterMove, BoardAfterCrank),
-   fitness_score(Strategy, PlayerColour, BoardAfterCrank, Fitness),
-   find_best_moves(OtherMoves, Strategy, PlayerColour, CurrentBoardState, H, Fitness, Move).
+   fitness_score(Strategy, PlayerColour, BoardAfterCrank, HFitness),
+   find_best_moves(OtherMoves, Strategy, PlayerColour, CurrentBoardState, H, HFitness, 
+                   Move, MoveFitness).
 
-find_best_moves([], _, _, _, BestMove, _, BestMove).
+find_best_moves([], _, _, _, BestMove, BestMoveFitness, BestMove, BestMoveFitness).
 
 find_best_moves([H | OtherMoves], Strategy, PlayerColour, CurrentBoardState, 
-                  SoFarMove, SoFarFitness, Move) :-
+                  SoFarMove, SoFarFitness, Move, MoveFitness) :-
    move_a_piece(H, PlayerColour, CurrentBoardState, BoardAfterMove),
    next_generation(BoardAfterMove, BoardAfterCrank),
    fitness_score(Strategy, PlayerColour, BoardAfterCrank, Fitness),
    (Fitness > SoFarFitness ->
-      find_best_moves(OtherMoves, Strategy, PlayerColour, CurrentBoardState, H, Fitness, Move);
       find_best_moves(OtherMoves, Strategy, PlayerColour, CurrentBoardState, 
-                      SoFarMove, SoFarFitness, Move)).
+                      H, Fitness, Move, MoveFitness);
+      find_best_moves(OtherMoves, Strategy, PlayerColour, CurrentBoardState, 
+                      SoFarMove, SoFarFitness, Move, MoveFitness)).
 
 /* Update the board with a specified move wihout having to separate and regroup colours */
 move_a_piece(Move, PlayerColour, CurrentBoardState, NewBoardState) :-
@@ -146,9 +146,7 @@ fitness_score(minimax, PlayerColour, Board, Fitness) :-
 /* Minimises the fitness of the opponent's best possible move for next turn */
 fitness_score(minimax, PlayerColour, Board, Fitness) :-
 	other_colour(PlayerColour, OpponentColour),
-	calculate_next_play(OpponentColour, Board, land_grab, NewBoardState, Move),
-   move_a_piece(Move, OpponentColour, NewBoardState, NewerBoardState),
-   fitness_score(land_grab, OpponentColour, NewerBoardState, OpponentFitness),
+	calculate_next_play(OpponentColour, Board, land_grab, _, _, OpponentFitness),
 	Fitness is -OpponentFitness. 
 
 other_colour('r', 'b').
